@@ -27,6 +27,7 @@ import {
   handleProjectIdInput,
   startFlow
 } from './handlers/userFlow.js';
+import { adminHelp } from './handlers/adminFlow.js';
 
 if (!BOT_TOKEN) {
   throw new Error('Не задан BOT_TOKEN. Укажите его в .env или переменной окружения.');
@@ -76,6 +77,11 @@ bot.command('edit_project', (ctx) => {
 bot.command('delete_project', (ctx) => {
   if (!isAdmin(ctx)) return;
   startDeleteProject(ctx, projectService);
+});
+
+bot.command('admin_help', (ctx) => {
+  if (!isAdmin(ctx)) return;
+  adminHelp(ctx);
 });
 
 bot.on('callback_query', (ctx) => {

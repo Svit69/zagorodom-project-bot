@@ -221,3 +221,17 @@ function notifyAdmins(bot, initiatorId, projectName) {
 }
 
 export const callbacks = callbackPrefixes;
+
+export function adminHelp(ctx) {
+  ctx.reply(
+    [
+      'Доступные команды администратора:',
+      '/get_id — показать первый свободный ID выбранного проекта;',
+      '/users — список пользователей (логин, имя, дата, покупки);',
+      '/create_project — мастер создания проекта (название, ссылка, 30 ID);',
+      '/edit_project — выбор проекта и редактирование названия/ссылки;',
+      '/delete_project — удаление проекта с подтверждением;',
+      '/cancel — прервать текущий шаг.'
+    ].join('\n')
+  );
+}
