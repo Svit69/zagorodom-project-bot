@@ -28,6 +28,10 @@ import {
   startFlow
 } from './handlers/userFlow.js';
 
+if (!BOT_TOKEN) {
+  throw new Error('Не задан BOT_TOKEN. Укажите его в .env или переменной окружения.');
+}
+
 const bot = new Telegraf(BOT_TOKEN);
 const db = new Database(DB_PATH);
 const userService = new UserService(db);
