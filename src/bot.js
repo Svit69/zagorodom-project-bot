@@ -204,12 +204,10 @@ bot.on('text', (ctx) => {
 });
 
 bot.on('photo', (ctx) => {
-  if (isAdmin(ctx)) return;
   handleUserRewardMedia(ctx, rewardService, bot);
 });
 
 bot.on('document', (ctx) => {
-  if (isAdmin(ctx)) return;
   handleUserRewardMedia(ctx, rewardService, bot);
 });
 
