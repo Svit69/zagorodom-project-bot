@@ -29,6 +29,8 @@ import {
   handleConsentNo,
   handleConsentYes,
   handleProjectIdInput,
+  requestProjectId,
+  USER_BUTTONS,
   startFlow
 } from './handlers/userFlow.js';
 
@@ -43,7 +45,7 @@ const projectService = new ProjectService(db);
 
 bot.use(
   session({
-    defaultSession: () => ({ state: USER_STATES.NONE, temp: {} })
+    defaultSession: () => ({ state: USER_STATES.NONE, temp: {}, agreed: false })
   })
 );
 
@@ -58,6 +60,14 @@ bot.command('cancel', (ctx) => {
   ctx.session.state = USER_STATES.NONE;
   ctx.session.temp = {};
   ctx.reply('Действие отменено.', { reply_markup: { remove_keyboard: true } });
+});
+
+bot.command('project', (ctx) => {
+  requestProjectId(ctx);
+});
+
+bot.hears(USER_BUTTONS.GET_PROJECT, (ctx) => {
+  requestProjectId(ctx);
 });
 
 bot.command('get_id', (ctx) => {

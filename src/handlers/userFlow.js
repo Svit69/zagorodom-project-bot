@@ -1,8 +1,21 @@
 import { USER_STATES } from '../constants.js';
 
+export const USER_BUTTONS = {
+  GET_PROJECT: 'Получить проект'
+};
+
+export function getUserCommandKeyboard() {
+  return {
+    keyboard: [[{ text: USER_BUTTONS.GET_PROJECT }]],
+    resize_keyboard: true,
+    is_persistent: true
+  };
+}
+
 export function startFlow(ctx) {
   ctx.session.state = USER_STATES.AWAITING_CONSENT;
   ctx.session.temp = {};
+  ctx.session.agreed = false;
   ctx.reply(
     'Добро пожаловать! Нажмите «Старт», чтобы продолжить.',
     {
@@ -46,20 +59,31 @@ export function consentStep(ctx) {
 
 export function handleConsentYes(ctx, userService) {
   const user = userService.ensureUser(ctx.from);
-  ctx.session.state = USER_STATES.AWAITING_PROJECT_ID;
+  ctx.session.state = USER_STATES.NONE;
+  ctx.session.agreed = true;
   ctx.reply(
-    `Спасибо, ${user.name}! Введите ID проекта, чтобы получить ссылку.`,
+    `Спасибо, ${user.name}! Нажмите кнопку «${USER_BUTTONS.GET_PROJECT}», чтобы ввести ID проекта.`,
     {
-      reply_markup: {
-        remove_keyboard: true
-      }
+      reply_markup: getUserCommandKeyboard()
     }
   );
 }
 
 export function handleConsentNo(ctx) {
   ctx.session.state = USER_STATES.NONE;
+  ctx.session.agreed = false;
   ctx.reply('Без согласия на обработку данных продолжить нельзя. Наберите /start, чтобы попробовать снова.', {
+    reply_markup: { remove_keyboard: true }
+  });
+}
+
+export function requestProjectId(ctx) {
+  if (!ctx.session.agreed) {
+    ctx.reply('Сначала примите согласие: нажмите /start и подтвердите обработку данных.');
+    return;
+  }
+  ctx.session.state = USER_STATES.AWAITING_PROJECT_ID;
+  ctx.reply('Введите ID проекта:', {
     reply_markup: { remove_keyboard: true }
   });
 }
@@ -76,5 +100,9 @@ export function handleProjectIdInput(ctx, projectService, userService) {
   }
   const { project } = result;
   userService.addPurchase(ctx.from.id, project.name);
+  ctx.session.state = USER_STATES.NONE;
   ctx.reply(`Ссылка на проект «${project.name}»:\n${project.link}`);
+  ctx.reply('Нужен другой проект? Нажмите кнопку ниже.', {
+    reply_markup: getUserCommandKeyboard()
+  });
 }
