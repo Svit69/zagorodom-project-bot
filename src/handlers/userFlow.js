@@ -12,20 +12,30 @@ export function getUserCommandKeyboard() {
   };
 }
 
-export function startFlow(ctx) {
-  ctx.session.state = USER_STATES.AWAITING_CONSENT;
+export function startFlow(ctx, userService) {
   ctx.session.temp = {};
-  ctx.session.agreed = false;
-  ctx.reply(
-    'Добро пожаловать! Нажмите «Старт», чтобы продолжить.',
-    {
-      reply_markup: {
-        keyboard: [[{ text: 'Старт' }]],
-        resize_keyboard: true,
-        one_time_keyboard: true
+  const user = userService.ensureUser(ctx.from);
+  if (user.consentAccepted) {
+    ctx.session.state = USER_STATES.NONE;
+    ctx.session.agreed = true;
+    ctx.reply(
+      `Снова здравствуйте, ${user.name}! Нажмите кнопку «${USER_BUTTONS.GET_PROJECT}», чтобы запросить новый проект.`,
+      {
+        reply_markup: getUserCommandKeyboard()
       }
+    );
+    return;
+  }
+
+  ctx.session.state = USER_STATES.AWAITING_CONSENT;
+  ctx.session.agreed = false;
+  ctx.reply('Добро пожаловать! Нажмите «Старт», чтобы продолжить.', {
+    reply_markup: {
+      keyboard: [[{ text: 'Старт' }]],
+      resize_keyboard: true,
+      one_time_keyboard: true
     }
-  );
+  });
 }
 
 export function consentStep(ctx) {
@@ -59,6 +69,7 @@ export function consentStep(ctx) {
 
 export function handleConsentYes(ctx, userService) {
   const user = userService.ensureUser(ctx.from);
+  userService.markConsent(user.id);
   ctx.session.state = USER_STATES.NONE;
   ctx.session.agreed = true;
   ctx.reply(
@@ -77,12 +88,14 @@ export function handleConsentNo(ctx) {
   });
 }
 
-export function requestProjectId(ctx) {
-  if (!ctx.session.agreed) {
+export function requestProjectId(ctx, userService) {
+  const hasConsent = ctx.session.agreed || userService.hasConsent(ctx.from.id);
+  if (!hasConsent) {
     ctx.reply('Сначала примите согласие: нажмите /start и подтвердите обработку данных.');
     return;
   }
   ctx.session.state = USER_STATES.AWAITING_PROJECT_ID;
+  ctx.session.agreed = true;
   ctx.reply('Введите ID проекта:', {
     reply_markup: { remove_keyboard: true }
   });

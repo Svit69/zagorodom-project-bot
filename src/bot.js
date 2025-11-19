@@ -59,7 +59,7 @@ bot.use(
 );
 
 bot.start((ctx) => {
-  startFlow(ctx);
+  startFlow(ctx, userService);
   if (isAdmin(ctx)) {
     sendAdminPanel(ctx);
   }
@@ -72,11 +72,11 @@ bot.command('cancel', (ctx) => {
 });
 
 bot.command('project', (ctx) => {
-  requestProjectId(ctx);
+  requestProjectId(ctx, userService);
 });
 
 bot.hears(USER_BUTTONS.GET_PROJECT, (ctx) => {
-  requestProjectId(ctx);
+  requestProjectId(ctx, userService);
 });
 
 bot.command('get_id', (ctx) => {
@@ -204,11 +204,11 @@ bot.on('text', (ctx) => {
 });
 
 bot.on('photo', (ctx) => {
-  handleUserRewardMedia(ctx, rewardService, bot);
+  handleUserRewardMedia(ctx, rewardService, bot, userService);
 });
 
 bot.on('document', (ctx) => {
-  handleUserRewardMedia(ctx, rewardService, bot);
+  handleUserRewardMedia(ctx, rewardService, bot, userService);
 });
 
 bot.launch().then(() => {

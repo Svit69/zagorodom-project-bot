@@ -14,8 +14,9 @@ export function extractRewardId(data) {
   return data.replace(REWARD_CALLBACK_PREFIX, '');
 }
 
-export async function handleUserRewardMedia(ctx, rewardService, bot) {
-  if (!ctx.session?.agreed) {
+export async function handleUserRewardMedia(ctx, rewardService, bot, userService) {
+  const hasConsent = ctx.session?.agreed || userService?.hasConsent?.(ctx.from.id);
+  if (!hasConsent) {
     return;
   }
   if (!ctx.message) {
