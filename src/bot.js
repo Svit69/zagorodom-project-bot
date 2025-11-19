@@ -16,6 +16,7 @@ import {
   handleGetIdCommand,
   handleGetIdSelection,
   handleUsersList,
+  handleProjectsList,
   isAdmin,
   sendAdminPanel,
   startCreateProject,
@@ -66,6 +67,11 @@ bot.command('get_id', (ctx) => {
 bot.command('users', (ctx) => {
   if (!isAdmin(ctx)) return;
   handleUsersList(ctx, userService);
+});
+
+bot.command('projects', (ctx) => {
+  if (!isAdmin(ctx)) return;
+  handleProjectsList(ctx, projectService);
 });
 
 bot.command('create_project', (ctx) => {

@@ -59,6 +59,16 @@ export function handleUsersList(ctx, userService) {
   ctx.reply(lines.join('\n'));
 }
 
+export function handleProjectsList(ctx, projectService) {
+  const projects = projectService.listProjects();
+  if (!projects.length) {
+    ctx.reply('Проектов пока нет.');
+    return;
+  }
+  const lines = projects.map((p) => `• ${p.name} — ${p.link}`);
+  ctx.reply(lines.join('\n'));
+}
+
 export function startCreateProject(ctx) {
   ctx.session.state = USER_STATES.ADMIN_CREATE_NAME;
   ctx.session.temp = {};
@@ -241,8 +251,9 @@ export function getAdminKeyboard() {
   return {
     keyboard: [
       [{ text: '/get_id' }, { text: '/users' }],
-      [{ text: '/create_project' }, { text: '/edit_project' }],
-      [{ text: '/delete_project' }, { text: '/admin_help' }]
+      [{ text: '/projects' }, { text: '/create_project' }],
+      [{ text: '/edit_project' }, { text: '/delete_project' }],
+      [{ text: '/admin_help' }, { text: '/admin_panel' }]
     ],
     resize_keyboard: true,
     is_persistent: true
