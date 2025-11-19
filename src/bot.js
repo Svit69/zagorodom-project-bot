@@ -17,6 +17,7 @@ import {
   handleGetIdSelection,
   handleUsersList,
   isAdmin,
+  sendAdminPanel,
   startCreateProject,
   startDeleteProject,
   startEditProject
@@ -46,6 +47,9 @@ bot.use(
 
 bot.start((ctx) => {
   startFlow(ctx);
+  if (isAdmin(ctx)) {
+    sendAdminPanel(ctx);
+  }
 });
 
 bot.command('cancel', (ctx) => {
@@ -82,6 +86,12 @@ bot.command('delete_project', (ctx) => {
 bot.command('admin_help', (ctx) => {
   if (!isAdmin(ctx)) return;
   adminHelp(ctx);
+  sendAdminPanel(ctx);
+});
+
+bot.command('admin_panel', (ctx) => {
+  if (!isAdmin(ctx)) return;
+  sendAdminPanel(ctx);
 });
 
 bot.on('callback_query', (ctx) => {

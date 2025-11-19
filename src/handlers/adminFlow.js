@@ -231,7 +231,26 @@ export function adminHelp(ctx) {
       '/create_project — мастер создания проекта (название, ссылка, 30 ID);',
       '/edit_project — выбор проекта и редактирование названия/ссылки;',
       '/delete_project — удаление проекта с подтверждением;',
-      '/cancel — прервать текущий шаг.'
+      '/cancel — прервать текущий шаг.',
+      '/admin_panel — показать клавиатуру с командами.'
     ].join('\n')
   );
+}
+
+export function getAdminKeyboard() {
+  return {
+    keyboard: [
+      [{ text: '/get_id' }, { text: '/users' }],
+      [{ text: '/create_project' }, { text: '/edit_project' }],
+      [{ text: '/delete_project' }, { text: '/admin_help' }]
+    ],
+    resize_keyboard: true,
+    is_persistent: true
+  };
+}
+
+export function sendAdminPanel(ctx) {
+  ctx.reply('Панель администратора:', {
+    reply_markup: getAdminKeyboard()
+  });
 }
