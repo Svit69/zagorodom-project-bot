@@ -1,7 +1,7 @@
 import { USER_STATES } from '../constants.js';
 import { ADMIN_IDS } from '../config.js';
 
-const callbackPrefixes = {
+export const callbacks = {
   GET_ID: 'getid:',
   EDIT_SELECT: 'edit_select:',
   EDIT_ACTION: 'edit_action:'
@@ -29,20 +29,20 @@ export function handleGetIdCommand(ctx, projectService) {
     return;
   }
   ctx.reply('Выберите проект:', {
-    reply_markup: formatProjectsKeyboard(projects, callbackPrefixes.GET_ID)
+    reply_markup: formatProjectsKeyboard(projects, callbacks.GET_ID)
   });
 }
 
 export function handleGetIdSelection(ctx, projectService) {
-  const name = decodeURIComponent(ctx.callbackQuery.data.replace(callbackPrefixes.GET_ID, ''));
+  const name = decodeURIComponent(ctx.callbackQuery.data.replace(callbacks.GET_ID, ''));
   const project = projectService.getProjectByName(name);
   if (!project) {
-    ctx.answerCbQuery('Проект не найден');
+    ctx.answerCbQuery('Проект не найден', { show_alert: true });
     return;
   }
   const firstId = project.ids[0];
   ctx.answerCbQuery();
-  ctx.reply(firstId ? `Первый свободный ID: ${firstId}` : 'Свободных ID нет');
+  ctx.reply(firstId ? `Первый свободный ID: ${firstId}` : 'Свободных ID нет.');
 }
 
 export function handleUsersList(ctx, userService) {
@@ -80,7 +80,7 @@ export function handleCreateName(ctx) {
   if (!name) return;
   ctx.session.temp = { name };
   ctx.session.state = USER_STATES.ADMIN_CREATE_LINK;
-  ctx.reply('Введите ссылку на диск или /cancel');
+  ctx.reply('Введите ссылку на проект или /cancel');
 }
 
 export function handleCreateLink(ctx, projectService) {
@@ -105,12 +105,12 @@ export function startEditProject(ctx, projectService) {
     return;
   }
   ctx.reply('Выберите проект для редактирования:', {
-    reply_markup: formatProjectsKeyboard(projects, callbackPrefixes.EDIT_SELECT)
+    reply_markup: formatProjectsKeyboard(projects, callbacks.EDIT_SELECT)
   });
 }
 
 export function handleEditSelection(ctx) {
-  const name = decodeURIComponent(ctx.callbackQuery.data.replace(callbackPrefixes.EDIT_SELECT, ''));
+  const name = decodeURIComponent(ctx.callbackQuery.data.replace(callbacks.EDIT_SELECT, ''));
   ctx.session.temp = { projectName: name };
   ctx.session.state = USER_STATES.ADMIN_EDIT_CHOOSE;
   ctx.answerCbQuery();
@@ -118,9 +118,9 @@ export function handleEditSelection(ctx) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Целиком', callback_data: `${callbackPrefixes.EDIT_ACTION}full` },
-          { text: 'Название', callback_data: `${callbackPrefixes.EDIT_ACTION}name` },
-          { text: 'Ссылка', callback_data: `${callbackPrefixes.EDIT_ACTION}link` }
+          { text: 'Целиком', callback_data: `${callbacks.EDIT_ACTION}full` },
+          { text: 'Название', callback_data: `${callbacks.EDIT_ACTION}name` },
+          { text: 'Ссылка', callback_data: `${callbacks.EDIT_ACTION}link` }
         ]
       ]
     }
@@ -128,7 +128,7 @@ export function handleEditSelection(ctx) {
 }
 
 export function handleEditActionChoice(ctx) {
-  const action = ctx.callbackQuery.data.replace(callbackPrefixes.EDIT_ACTION, '');
+  const action = ctx.callbackQuery.data.replace(callbacks.EDIT_ACTION, '');
   ctx.answerCbQuery();
   switch (action) {
     case 'full':
@@ -167,8 +167,10 @@ export function handleEditInput(ctx, projectService) {
       ctx.reply('Введите новую ссылку или /cancel');
       return;
     } else if (ctx.session.state === USER_STATES.ADMIN_EDIT_FULL_LINK) {
-      const updates = { name: ctx.session.temp.newName, link: text };
-      const updated = projectService.updateProject(projectName, updates);
+      const updated = projectService.updateProject(projectName, {
+        name: ctx.session.temp.newName,
+        link: text
+      });
       ctx.reply(`Проект обновлён:\nНазвание: ${updated.name}\nСсылка: ${updated.link}`);
     }
   } catch (error) {
@@ -223,14 +225,11 @@ export function handleDeleteFlow(ctx, projectService, bot) {
 
 function notifyAdmins(bot, initiatorId, projectName) {
   ADMIN_IDS.forEach((adminId) => {
-    bot.telegram.sendMessage(
-      adminId,
-      `Администратор ${initiatorId} удалил проект ${projectName}`
-    ).catch(() => {});
+    bot.telegram
+      .sendMessage(adminId, `Администратор ${initiatorId} удалил проект ${projectName}`)
+      .catch(() => {});
   });
 }
-
-export const callbacks = callbackPrefixes;
 
 export function adminHelp(ctx) {
   ctx.reply(
@@ -238,9 +237,11 @@ export function adminHelp(ctx) {
       'Доступные команды администратора:',
       '/get_id — показать первый свободный ID выбранного проекта;',
       '/users — список пользователей (логин, имя, дата, покупки);',
+      '/projects — список проектов (название + ссылка);',
       '/create_project — мастер создания проекта (название, ссылка, 30 ID);',
       '/edit_project — выбор проекта и редактирование названия/ссылки;',
       '/delete_project — удаление проекта с подтверждением;',
+      '/set_reward_message — задать текст поздравительного сообщения;',
       '/cancel — прервать текущий шаг.',
       '/admin_panel — показать клавиатуру с командами.'
     ].join('\n')
@@ -254,6 +255,7 @@ export const ADMIN_BUTTONS = {
   CREATE: 'Создать проект',
   EDIT: 'Редактировать',
   DELETE: 'Удалить проект',
+  REWARD_MESSAGE: 'Текст подарка',
   HELP: 'Справка',
   PANEL: 'Панель'
 };
@@ -264,6 +266,7 @@ export function getAdminKeyboard() {
       [{ text: ADMIN_BUTTONS.GET_ID }, { text: ADMIN_BUTTONS.USERS }],
       [{ text: ADMIN_BUTTONS.PROJECTS }, { text: ADMIN_BUTTONS.CREATE }],
       [{ text: ADMIN_BUTTONS.EDIT }, { text: ADMIN_BUTTONS.DELETE }],
+      [{ text: ADMIN_BUTTONS.REWARD_MESSAGE }],
       [{ text: ADMIN_BUTTONS.HELP }, { text: ADMIN_BUTTONS.PANEL }]
     ],
     resize_keyboard: true,
@@ -275,4 +278,18 @@ export function sendAdminPanel(ctx) {
   ctx.reply('Панель администратора:', {
     reply_markup: getAdminKeyboard()
   });
+}
+
+export function startSetRewardMessage(ctx) {
+  ctx.session.state = USER_STATES.ADMIN_SET_REWARD_MESSAGE;
+  ctx.reply('Введите новое поздравительное сообщение (можно использовать HTML) или /cancel');
+}
+
+export function handleSetRewardMessageInput(ctx, rewardService) {
+  const text = (ctx.message?.text || '').trim();
+  if (!text) return;
+  rewardService.setRewardMessage(text);
+  ctx.reply('Поздравительное сообщение сохранено.');
+  ctx.session.state = USER_STATES.NONE;
+  ctx.session.temp = {};
 }

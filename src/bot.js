@@ -3,6 +3,7 @@ import { BOT_TOKEN, DB_PATH, ADMIN_IDS } from './config.js';
 import Database from './services/Database.js';
 import UserService from './services/UserService.js';
 import ProjectService from './services/ProjectService.js';
+import RewardService from './services/RewardService.js';
 import { USER_STATES } from './constants.js';
 import {
   callbacks,
@@ -18,11 +19,13 @@ import {
   handleGetIdSelection,
   handleUsersList,
   handleProjectsList,
+  handleSetRewardMessageInput,
   isAdmin,
   sendAdminPanel,
   startCreateProject,
   startDeleteProject,
-  startEditProject
+  startEditProject,
+  startSetRewardMessage
 } from './handlers/adminFlow.js';
 import {
   consentStep,
@@ -33,6 +36,11 @@ import {
   USER_BUTTONS,
   startFlow
 } from './handlers/userFlow.js';
+import {
+  handleRewardCallback,
+  handleUserRewardMedia,
+  isRewardCallback
+} from './handlers/rewardFlow.js';
 
 if (!BOT_TOKEN) {
   throw new Error('Не задан BOT_TOKEN. Укажите его в .env или переменной окружения.');
@@ -42,6 +50,7 @@ const bot = new Telegraf(BOT_TOKEN);
 const db = new Database(DB_PATH);
 const userService = new UserService(db);
 const projectService = new ProjectService(db);
+const rewardService = new RewardService(db);
 
 bot.use(
   session({
@@ -111,6 +120,11 @@ bot.command('admin_panel', (ctx) => {
   sendAdminPanel(ctx);
 });
 
+bot.command('set_reward_message', (ctx) => {
+  if (!isAdmin(ctx)) return;
+  startSetRewardMessage(ctx);
+});
+
 const adminButtonHandlers = new Map([
   [ADMIN_BUTTONS.GET_ID, (ctx) => handleGetIdCommand(ctx, projectService)],
   [ADMIN_BUTTONS.USERS, (ctx) => handleUsersList(ctx, userService)],
@@ -118,6 +132,7 @@ const adminButtonHandlers = new Map([
   [ADMIN_BUTTONS.CREATE, (ctx) => startCreateProject(ctx)],
   [ADMIN_BUTTONS.EDIT, (ctx) => startEditProject(ctx, projectService)],
   [ADMIN_BUTTONS.DELETE, (ctx) => startDeleteProject(ctx, projectService)],
+  [ADMIN_BUTTONS.REWARD_MESSAGE, (ctx) => startSetRewardMessage(ctx)],
   [ADMIN_BUTTONS.HELP, (ctx) => {
     adminHelp(ctx);
     sendAdminPanel(ctx);
@@ -146,6 +161,12 @@ bot.on('callback_query', (ctx) => {
     handleEditSelection(ctx);
   } else if (data.startsWith(callbacks.EDIT_ACTION)) {
     handleEditActionChoice(ctx);
+  } else if (isRewardCallback(data)) {
+    if (!isAdmin(ctx)) {
+      ctx.answerCbQuery('Недостаточно прав', { show_alert: true });
+      return;
+    }
+    handleRewardCallback(ctx, rewardService, bot);
   }
 });
 
@@ -169,6 +190,8 @@ bot.on('text', (ctx) => {
         return handleEditInput(ctx, projectService);
       case USER_STATES.ADMIN_DELETE_CONFIRM:
         return handleDeleteFlow(ctx, projectService, bot);
+      case USER_STATES.ADMIN_SET_REWARD_MESSAGE:
+        return handleSetRewardMessageInput(ctx, rewardService);
       default:
         break;
     }
@@ -178,6 +201,16 @@ bot.on('text', (ctx) => {
   if (state === USER_STATES.AWAITING_PROJECT_ID) {
     handleProjectIdInput(ctx, projectService, userService);
   }
+});
+
+bot.on('photo', (ctx) => {
+  if (isAdmin(ctx)) return;
+  handleUserRewardMedia(ctx, rewardService, bot);
+});
+
+bot.on('document', (ctx) => {
+  if (isAdmin(ctx)) return;
+  handleUserRewardMedia(ctx, rewardService, bot);
 });
 
 bot.launch().then(() => {
