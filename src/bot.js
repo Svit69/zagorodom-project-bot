@@ -7,6 +7,7 @@ import { USER_STATES } from './constants.js';
 import {
   callbacks,
   adminHelp,
+  ADMIN_BUTTONS,
   handleCreateLink,
   handleCreateName,
   handleDeleteFlow,
@@ -98,6 +99,27 @@ bot.command('admin_help', (ctx) => {
 bot.command('admin_panel', (ctx) => {
   if (!isAdmin(ctx)) return;
   sendAdminPanel(ctx);
+});
+
+const adminButtonHandlers = new Map([
+  [ADMIN_BUTTONS.GET_ID, (ctx) => handleGetIdCommand(ctx, projectService)],
+  [ADMIN_BUTTONS.USERS, (ctx) => handleUsersList(ctx, userService)],
+  [ADMIN_BUTTONS.PROJECTS, (ctx) => handleProjectsList(ctx, projectService)],
+  [ADMIN_BUTTONS.CREATE, (ctx) => startCreateProject(ctx)],
+  [ADMIN_BUTTONS.EDIT, (ctx) => startEditProject(ctx, projectService)],
+  [ADMIN_BUTTONS.DELETE, (ctx) => startDeleteProject(ctx, projectService)],
+  [ADMIN_BUTTONS.HELP, (ctx) => {
+    adminHelp(ctx);
+    sendAdminPanel(ctx);
+  }],
+  [ADMIN_BUTTONS.PANEL, (ctx) => sendAdminPanel(ctx)]
+]);
+
+adminButtonHandlers.forEach((handler, label) => {
+  bot.hears(label, (ctx) => {
+    if (!isAdmin(ctx)) return;
+    handler(ctx);
+  });
 });
 
 bot.on('callback_query', (ctx) => {

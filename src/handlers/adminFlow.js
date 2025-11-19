@@ -247,13 +247,24 @@ export function adminHelp(ctx) {
   );
 }
 
+export const ADMIN_BUTTONS = {
+  GET_ID: 'Получить ID',
+  USERS: 'Пользователи',
+  PROJECTS: 'Проекты',
+  CREATE: 'Создать проект',
+  EDIT: 'Редактировать',
+  DELETE: 'Удалить проект',
+  HELP: 'Справка',
+  PANEL: 'Панель'
+};
+
 export function getAdminKeyboard() {
   return {
     keyboard: [
-      [{ text: '/get_id' }, { text: '/users' }],
-      [{ text: '/projects' }, { text: '/create_project' }],
-      [{ text: '/edit_project' }, { text: '/delete_project' }],
-      [{ text: '/admin_help' }, { text: '/admin_panel' }]
+      [{ text: ADMIN_BUTTONS.GET_ID }, { text: ADMIN_BUTTONS.USERS }],
+      [{ text: ADMIN_BUTTONS.PROJECTS }, { text: ADMIN_BUTTONS.CREATE }],
+      [{ text: ADMIN_BUTTONS.EDIT }, { text: ADMIN_BUTTONS.DELETE }],
+      [{ text: ADMIN_BUTTONS.HELP }, { text: ADMIN_BUTTONS.PANEL }]
     ],
     resize_keyboard: true,
     is_persistent: true
