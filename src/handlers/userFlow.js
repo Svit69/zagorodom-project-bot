@@ -17,16 +17,29 @@ export function startFlow(ctx) {
 
 export function consentStep(ctx) {
   ctx.session.state = USER_STATES.AWAITING_CONSENT;
+  const message = [
+    'Мы бережно относимся к вашим данным 💚',
+    'Подтвердите своё согласие на получение информационных и маркетинговых сообщений, а также на обработку персональных данных в соответствии с нашими документами:',
+    '',
+    '• <a href="https://zagorodom96.ru/privacy">Политика конфиденциальности</a>',
+    '• <a href="https://zagorodom96.ru/soglasie">Согласие на получение информационных сообщений</a>',
+    '• <a href="https://zagorodom96.ru/oferta">Договор оферты</a>'
+  ].join('\n');
+
   ctx.reply(
-    'Для продолжения подтвердите согласие на обработку персональных данных.',
+    message,
     {
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
       reply_markup: {
-        keyboard: [
-          [{ text: 'Соглашаюсь' }, { text: 'Не соглашаюсь' }]
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: true
-      }
+        inline_keyboard: [
+          [
+            { text: 'Соглашаюсь', callback_data: 'consent_accept' },
+            { text: 'Не соглашаюсь', callback_data: 'consent_decline' }
+          ]
+        ]
+      },
+      reply_to_message_id: ctx.message?.message_id
     }
   );
 }

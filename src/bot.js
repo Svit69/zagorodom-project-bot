@@ -6,6 +6,7 @@ import ProjectService from './services/ProjectService.js';
 import { USER_STATES } from './constants.js';
 import {
   callbacks,
+  adminHelp,
   handleCreateLink,
   handleCreateName,
   handleDeleteFlow,
@@ -27,7 +28,6 @@ import {
   handleProjectIdInput,
   startFlow
 } from './handlers/userFlow.js';
-import { adminHelp } from './handlers/adminFlow.js';
 
 if (!BOT_TOKEN) {
   throw new Error('Не задан BOT_TOKEN. Укажите его в .env или переменной окружения.');
@@ -86,7 +86,13 @@ bot.command('admin_help', (ctx) => {
 
 bot.on('callback_query', (ctx) => {
   const data = ctx.callbackQuery?.data || '';
-  if (data.startsWith(callbacks.GET_ID)) {
+  if (data === 'consent_accept') {
+    ctx.answerCbQuery();
+    handleConsentYes(ctx, userService);
+  } else if (data === 'consent_decline') {
+    ctx.answerCbQuery();
+    handleConsentNo(ctx);
+  } else if (data.startsWith(callbacks.GET_ID)) {
     handleGetIdSelection(ctx, projectService);
   } else if (data.startsWith(callbacks.EDIT_SELECT)) {
     handleEditSelection(ctx);
@@ -97,14 +103,6 @@ bot.on('callback_query', (ctx) => {
 
 bot.hears('Старт', (ctx) => {
   consentStep(ctx);
-});
-
-bot.hears('Соглашаюсь', (ctx) => {
-  handleConsentYes(ctx, userService);
-});
-
-bot.hears('Не соглашаюсь', (ctx) => {
-  handleConsentNo(ctx);
 });
 
 bot.on('text', (ctx) => {
