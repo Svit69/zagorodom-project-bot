@@ -75,12 +75,18 @@ export default class ProjectService {
   consumeId(id) {
     const data = this.db.read();
     this.ensureIssued(data);
-    const project = data.projects.find((p) => (p.ids || []).includes(id) || (p.issued || []).includes(id));
+    const project = data.projects.find(
+      (p) => (p.ids || []).includes(id) || (p.issued || []).some((item) => item.id === id)
+    );
     if (!project) {
       return null;
     }
-    if (project.issued?.includes(id)) {
-      project.issued = project.issued.filter((item) => item !== id);
+    const issuedItem = (project.issued || []).find((item) => item.id === id);
+    if (issuedItem) {
+      if (issuedItem.activated) {
+        return null;
+      }
+      issuedItem.activated = true;
     } else {
       project.ids = project.ids.filter((item) => item !== id);
     }
@@ -104,7 +110,7 @@ export default class ProjectService {
     if (!project || !project.ids.length) return null;
     const issued = project.ids.shift();
     if (!project.issued) project.issued = [];
-    project.issued.push(issued);
+    project.issued.push({ id: issued, activated: false });
     const newId = this.generateUniqueId(data);
     project.ids.push(newId);
     this.db.write(data);
@@ -124,7 +130,7 @@ export default class ProjectService {
     this.ensureIssued(data);
     const existing = new Set(
       data.projects
-        .flatMap((p) => [...(p.ids || []), ...(p.issued || [])])
+        .flatMap((p) => [...(p.ids || []), ...(p.issued || []).map((item) => item.id)])
         .concat(localReserved || [])
     );
     let candidate;
@@ -138,6 +144,10 @@ export default class ProjectService {
     if (!data?.projects) return;
     data.projects.forEach((p) => {
       if (!p.issued) p.issued = [];
+      // migrate string IDs to object form
+      p.issued = p.issued.map((item) =>
+        typeof item === 'string' ? { id: item, activated: false } : item
+      );
     });
   }
 }

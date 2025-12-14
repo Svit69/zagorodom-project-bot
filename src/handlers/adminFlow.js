@@ -115,6 +115,24 @@ export function handleProjectsList(ctx, projectService) {
   ctx.reply(lines.join('\n'));
 }
 
+export function handleIssuedIds(ctx, projectService) {
+  const projects = projectService.listProjects();
+  if (!projects.length) {
+    ctx.reply('Проектов пока нет.');
+    return;
+  }
+  const lines = projects.map((p) => {
+    if (!p.issued?.length) {
+      return `• ${p.name}: выданных ID нет`;
+    }
+    const ids = p.issued
+      .map((item) => `  - ${item.id} — ${item.activated ? 'активирован' : 'не активирован'}`)
+      .join('\n');
+    return `• ${p.name}:\n${ids}`;
+  });
+  ctx.reply(lines.join('\n'));
+}
+
 export function startCreateProject(ctx) {
   ctx.session.state = USER_STATES.ADMIN_CREATE_NAME;
   ctx.session.temp = {};
@@ -284,6 +302,7 @@ export function adminHelp(ctx) {
       '/get_id — показать первый свободный ID выбранного проекта;',
       '/users — список пользователей (логин, имя, дата, покупки);',
       '/projects — список проектов (название + ссылка);',
+      '/issued_ids — список выданных ID (активирован/не активирован);',
       '/create_project — мастер создания проекта (название, ссылка, 30 ID);',
       '/edit_project — выбор проекта и редактирование названия/ссылки;',
       '/delete_project — удаление проекта с подтверждением;',
@@ -298,6 +317,7 @@ export const ADMIN_BUTTONS = {
   GET_ID: 'Получить ID',
   USERS: 'Пользователи',
   PROJECTS: 'Проекты',
+  ISSUED: 'Выданные ID',
   CREATE: 'Создать проект',
   EDIT: 'Редактировать',
   DELETE: 'Удалить проект',
@@ -310,9 +330,9 @@ export function getAdminKeyboard() {
   return {
     keyboard: [
       [{ text: ADMIN_BUTTONS.GET_ID }, { text: ADMIN_BUTTONS.USERS }],
-      [{ text: ADMIN_BUTTONS.PROJECTS }, { text: ADMIN_BUTTONS.CREATE }],
-      [{ text: ADMIN_BUTTONS.EDIT }, { text: ADMIN_BUTTONS.DELETE }],
-      [{ text: ADMIN_BUTTONS.REWARD_MESSAGE }],
+      [{ text: ADMIN_BUTTONS.PROJECTS }, { text: ADMIN_BUTTONS.ISSUED }],
+      [{ text: ADMIN_BUTTONS.CREATE }, { text: ADMIN_BUTTONS.EDIT }],
+      [{ text: ADMIN_BUTTONS.DELETE }, { text: ADMIN_BUTTONS.REWARD_MESSAGE }],
       [{ text: ADMIN_BUTTONS.HELP }, { text: ADMIN_BUTTONS.PANEL }]
     ],
     resize_keyboard: true,

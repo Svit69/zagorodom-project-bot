@@ -20,6 +20,7 @@ import {
   handleGetIdNext,
   handleUsersList,
   handleProjectsList,
+  handleIssuedIds,
   handleSetRewardMessageInput,
   isAdmin,
   sendAdminPanel,
@@ -95,6 +96,11 @@ bot.command('projects', (ctx) => {
   handleProjectsList(ctx, projectService);
 });
 
+bot.command('issued_ids', (ctx) => {
+  if (!isAdmin(ctx)) return;
+  handleIssuedIds(ctx, projectService);
+});
+
 bot.command('create_project', (ctx) => {
   if (!isAdmin(ctx)) return;
   startCreateProject(ctx);
@@ -130,6 +136,7 @@ const adminButtonHandlers = new Map([
   [ADMIN_BUTTONS.GET_ID, (ctx) => handleGetIdCommand(ctx, projectService)],
   [ADMIN_BUTTONS.USERS, (ctx) => handleUsersList(ctx, userService)],
   [ADMIN_BUTTONS.PROJECTS, (ctx) => handleProjectsList(ctx, projectService)],
+  [ADMIN_BUTTONS.ISSUED, (ctx) => handleIssuedIds(ctx, projectService)],
   [ADMIN_BUTTONS.CREATE, (ctx) => startCreateProject(ctx)],
   [ADMIN_BUTTONS.EDIT, (ctx) => startEditProject(ctx, projectService)],
   [ADMIN_BUTTONS.DELETE, (ctx) => startDeleteProject(ctx, projectService)],
