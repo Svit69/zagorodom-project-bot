@@ -6,16 +6,20 @@ export default class ProjectService {
   }
 
   listProjects() {
-    return this.db.read().projects;
+    const data = this.db.read();
+    this.ensureIssued(data);
+    return data.projects;
   }
 
   getProjectByName(name) {
     const data = this.db.read();
+    this.ensureIssued(data);
     return data.projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
   }
 
   createProject(name, link) {
     const data = this.db.read();
+    this.ensureIssued(data);
     if (data.projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
       throw new Error('Проект с таким названием уже существует');
     }
@@ -23,6 +27,7 @@ export default class ProjectService {
       name,
       link,
       ids: this.generateIds(data, 30),
+      issued: [],
       createdAt: new Date().toISOString()
     };
     data.projects.push(newProject);
@@ -32,6 +37,7 @@ export default class ProjectService {
 
   updateProject(name, updates) {
     const data = this.db.read();
+    this.ensureIssued(data);
     const project = data.projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
     if (!project) {
       throw new Error('Проект не найден');
@@ -56,6 +62,7 @@ export default class ProjectService {
 
   deleteProjectByName(name) {
     const data = this.db.read();
+    this.ensureIssued(data);
     const index = data.projects.findIndex((p) => p.name.toLowerCase() === name.toLowerCase());
     if (index === -1) {
       throw new Error('Проект не найден');
@@ -67,11 +74,16 @@ export default class ProjectService {
 
   consumeId(id) {
     const data = this.db.read();
-    const project = data.projects.find((p) => p.ids.includes(id));
+    this.ensureIssued(data);
+    const project = data.projects.find((p) => (p.ids || []).includes(id) || (p.issued || []).includes(id));
     if (!project) {
       return null;
     }
-    project.ids = project.ids.filter((item) => item !== id);
+    if (project.issued?.includes(id)) {
+      project.issued = project.issued.filter((item) => item !== id);
+    } else {
+      project.ids = project.ids.filter((item) => item !== id);
+    }
     const newId = this.generateUniqueId(data);
     project.ids.push(newId);
     this.db.write(data);
@@ -80,15 +92,19 @@ export default class ProjectService {
 
   firstFreeId(projectName) {
     const data = this.db.read();
+    this.ensureIssued(data);
     const project = data.projects.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
     return project?.ids[0] || null;
   }
 
   consumeFirstId(projectName) {
     const data = this.db.read();
+    this.ensureIssued(data);
     const project = data.projects.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
     if (!project || !project.ids.length) return null;
     const issued = project.ids.shift();
+    if (!project.issued) project.issued = [];
+    project.issued.push(issued);
     const newId = this.generateUniqueId(data);
     project.ids.push(newId);
     this.db.write(data);
@@ -105,13 +121,23 @@ export default class ProjectService {
   }
 
   generateUniqueId(data, localReserved = []) {
+    this.ensureIssued(data);
     const existing = new Set(
-      data.projects.flatMap((p) => p.ids).concat(localReserved || [])
+      data.projects
+        .flatMap((p) => [...(p.ids || []), ...(p.issued || [])])
+        .concat(localReserved || [])
     );
     let candidate;
     do {
       candidate = crypto.randomBytes(4).toString('hex').toUpperCase();
     } while (existing.has(candidate));
     return candidate;
+  }
+
+  ensureIssued(data) {
+    if (!data?.projects) return;
+    data.projects.forEach((p) => {
+      if (!p.issued) p.issued = [];
+    });
   }
 }
