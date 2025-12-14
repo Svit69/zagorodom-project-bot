@@ -80,8 +80,19 @@ export default class ProjectService {
 
   firstFreeId(projectName) {
     const data = this.db.read();
-    const project = data.projects.find((p) => p.name === projectName);
+    const project = data.projects.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
     return project?.ids[0] || null;
+  }
+
+  consumeFirstId(projectName) {
+    const data = this.db.read();
+    const project = data.projects.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
+    if (!project || !project.ids.length) return null;
+    const issued = project.ids.shift();
+    const newId = this.generateUniqueId(data);
+    project.ids.push(newId);
+    this.db.write(data);
+    return { project, issued };
   }
 
   generateIds(data, count) {

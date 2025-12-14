@@ -17,6 +17,7 @@ import {
   handleEditSelection,
   handleGetIdCommand,
   handleGetIdSelection,
+  handleGetIdNext,
   handleUsersList,
   handleProjectsList,
   handleSetRewardMessageInput,
@@ -157,6 +158,12 @@ bot.on('callback_query', (ctx) => {
     handleConsentNo(ctx);
   } else if (data.startsWith(callbacks.GET_ID)) {
     handleGetIdSelection(ctx, projectService);
+  } else if (data.startsWith(callbacks.GET_ID_NEXT)) {
+    if (!isAdmin(ctx)) {
+      ctx.answerCbQuery('Недостаточно прав', { show_alert: true });
+      return;
+    }
+    handleGetIdNext(ctx, projectService);
   } else if (data.startsWith(callbacks.EDIT_SELECT)) {
     handleEditSelection(ctx);
   } else if (data.startsWith(callbacks.EDIT_ACTION)) {

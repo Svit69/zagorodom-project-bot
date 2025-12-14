@@ -3,6 +3,7 @@ import { ADMIN_IDS } from '../config.js';
 
 export const callbacks = {
   GET_ID: 'getid:',
+  GET_ID_NEXT: 'getid_next:',
   EDIT_SELECT: 'edit_select:',
   EDIT_ACTION: 'edit_action:'
 };
@@ -42,7 +43,52 @@ export function handleGetIdSelection(ctx, projectService) {
   }
   const firstId = project.ids[0];
   ctx.answerCbQuery();
-  ctx.reply(firstId ? `Первый свободный ID: ${firstId}` : 'Свободных ID нет.');
+  ctx.reply(firstId ? `Первый свободный ID: ${firstId}` : 'Свободных ID нет.', {
+    reply_markup: firstId
+      ? {
+          inline_keyboard: [
+            [
+              {
+                text: 'Списать и получить следующий',
+                callback_data: `${callbacks.GET_ID_NEXT}${encodeURIComponent(project.name)}`
+              }
+            ]
+          ]
+        }
+      : undefined
+  });
+}
+
+export function handleGetIdNext(ctx, projectService) {
+  const name = decodeURIComponent(ctx.callbackQuery.data.replace(callbacks.GET_ID_NEXT, ''));
+  const result = projectService.consumeFirstId(name);
+  if (!result) {
+    ctx.answerCbQuery('ID не найден', { show_alert: true });
+    return;
+  }
+  const { project, issued } = result;
+  const nextId = project.ids[0];
+  ctx.answerCbQuery();
+  ctx.reply(
+    [
+      `Выдан ID: ${issued}`,
+      nextId ? `Следующий свободный ID: ${nextId}` : 'Свободных ID больше нет.'
+    ].join('\n'),
+    {
+      reply_markup: nextId
+        ? {
+            inline_keyboard: [
+              [
+                {
+                  text: 'Списать и получить следующий',
+                  callback_data: `${callbacks.GET_ID_NEXT}${encodeURIComponent(project.name)}`
+                }
+              ]
+            ]
+          }
+        : undefined
+    }
+  );
 }
 
 export function handleUsersList(ctx, userService) {
